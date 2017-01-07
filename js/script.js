@@ -41,7 +41,7 @@ $(function () {
             self.ringsMesh = new THREE.Mesh(self.rings, self.material);
             self.ringsMesh.rotation.x = rings.rotation.x;
             self.ringsMesh.rotation.z = rings.rotation.z;
-            self.ringsMesh.position.x = distance;
+            self.ringsMesh.position.x = rings.rotation.x;
             self.mesh.add(self.ringsMesh);
         }
         self.mesh.position.x = distance;
@@ -95,7 +95,7 @@ $(function () {
     //Jupiter
     bodies.planets.push(new Planet({ name: 'Jupiter', size: 11.2, color: 'c99039', distance: 5.203 * orbitalScale, velocity: .08428393294 * speed, parent: bodies.stars[0], rotationVelocity: 1 }));
     //Saturn
-    bodies.planets.push(new Planet({ name: 'Saturn', size: 9.45, color: 'e3e0c0', distance: 9.58 * orbitalScale, velocity: .0344827586 * speed, parent: bodies.stars[0], rotationVelocity: 1, rings: { size: 2, width: .5, rotation: { x: 1, z: 1 } } }));
+    bodies.planets.push(new Planet({ name: 'Saturn', size: 9.45, color: 'e3e0c0', distance: 9.58 * orbitalScale, velocity: .0344827586 * speed, parent: bodies.stars[0], rotationVelocity: 1, rings: { size: 1.1, width: .3, rotation: { x: 1, z: 1 } } }));
     //Uranus
     bodies.planets.push(new Planet({ name: 'Uranus', size: 4.01, color: 'c6d3e3', distance: 19.2 * orbitalScale, velocity: .0119474313 * speed, parent: bodies.stars[0], rotationVelocity: 1 }));
     //Neptune
@@ -112,29 +112,27 @@ $(function () {
         10000 // Far plane
         );
         self.camera.position.set(-100, 20, 100);
-        self.camera.lookAt(scene.position);
+        self.lookAtPos = new THREE.Vector3();
+        self.lookAtPos.setFromMatrixPosition(bodies.stars[0].mesh.matrixWorld);
+        self.camera.lookAt(self.lookAtPos);
     }
     Camera.prototype.follow = function () {
         var self = this;
         requestAnimationFrame(self.follow.bind(self));
-        var vector = new THREE.Vector3();
-        vector.setFromMatrixPosition(self.target.mesh.matrixWorld);
-        pos = vector;
+        self.lookAtPos.setFromMatrixPosition(self.target.mesh.matrixWorld);
         self.camera.fov = 1;
         self.camera.updateProjectionMatrix();
-        self.camera.lookAt(vector);
-        console.log('work');
+        self.camera.lookAt(self.lookAtPos);
     };
     var camera = new Camera;
-    //	camera.follow();
+    camera.target = bodies.stars[0];
     $('.planetnav a').on('click', function (e) {
         e.preventDefault();
-        camera.target = bodies.planets[2]; //Replace with something more dynamic
+        camera.target = eval($(this).data('target')); //Replace with something more dynamic
         camera.follow();
     });
-    ;
     function init() {
-        var controls = new THREE.OrbitControls(camera.camera);
+        renderer.controls = new THREE.OrbitControls(camera.camera);
     }
     //Lights
     var light = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.3);
@@ -159,6 +157,8 @@ $(function () {
     render = function () {
         requestAnimationFrame(render);
         animate();
+        renderer.controls.target = camera.lookAtPos;
+        renderer.controls.update();
         renderer.render(scene, camera.camera);
     };
     revolve = function () {
